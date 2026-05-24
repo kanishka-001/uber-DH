@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pick-Me Delivery Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+<style>
+/* ─── DESIGN TOKENS ─── */
+:root {
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem;
+  --space-12: 3rem; --space-16: 4rem;
+
+  --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem;
+  --radius-xl: 1rem; --radius-full: 9999px;
+  --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --content-wide: 1280px;
+  --font-body: 'Geist', 'Inter', sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+}
+
+:root, [data-theme="light"] {
+  --color-bg: #f7f6f2; --color-surface: #f9f8f5; --color-surface-2: #fbfbf9;
+  --color-surface-offset: #f3f0ec; --color-surface-dynamic: #e6e4df;
+  --color-divider: #dcd9d5; --color-border: #d4d1ca;
+  --color-text: #28251d; --color-text-muted: #7a7974; --color-text-faint: #bab9b4;
+  --color-text-inverse: #f9f8f4;
+  --color-primary: #01696f; --color-primary-hover: #0c4e54;
+  --color-primary-highlight: #cedcd8;
+  --color-success: #437a22; --color-success-highlight: #d4dfcc;
+  --color-warning: #964219; --color-warning-highlight: #ddcfc6;
+  --color-error: #a12c7b; --color-error-highlight: #e0ced7;
+  --color-orange: #da7101; --color-gold: #d19900;
+  --color-blue: #006494; --color-purple: #7a39bb;
+  --shadow-sm: 0 1px 2px oklch(0.2 0.01 80 / 0.06);
+  --shadow-md: 0 4px 12px oklch(0.2 0.01 80 / 0.08);
+  --shadow-lg: 0 12px 32px oklch(0.2 0.01 80 / 0.12);
+}
+
+[data-theme="dark"] {
+  --color-bg: #111110; --color-surface: #1a1918; --color-surface-2: #201f1d;
+  --color-surface-offset: #252422; --color-surface-dynamic: #2d2c2a;
+  --color-divider: #2e2d2b; --color-border: #393836;
+  --color-text: #e8e6e3; --color-text-muted: #8a8985; --color-text-faint: #555451;
+  --color-text-inverse: #1c1b19;
+  --color-primary: #4fc9cf; --color-primary-hover: #2faaaf;
+  --color-primary-highlight: #1a3436;
+  --color-success: #6daa45; --color-success-highlight: #263320;
+  --color-warning: #f59a4a; --color-warning-highlight: #3a2a18;
+  --color-error: #e06baf; --color-error-highlight: #361628;
+  --color-orange: #fdab43; --color-gold: #e8af34;
+  --color-blue: #5591c7; --color-purple: #a86fdf;
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.25);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.35);
+  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.5);
+}
+
+/* ─── BASE ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+body {
+  min-height: 100dvh; font-family: var(--font-body); font-size: var(--text-sm);
+  color: var(--color-text); background: var(--color-bg);
+  transition: background var(--transition-interactive), color var(--transition-interactive);
+}
+img, svg { display: block; max-width: 100%; }
+button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+table { border-collapse: collapse; width: 100%; }
+
+/* ─── LAYOUT ─── */
+.app { display: grid; grid-template-rows: auto 1fr; min-height: 100dvh; }
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-6);
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+}
+.header-left { display: flex; align-items: center; gap: var(--space-3); }
+.logo-svg { color: var(--color-primary); flex-shrink: 0; }
+.header-title { font-size: var(--text-base); font-weight: 600; letter-spacing: -0.02em; }
+.header-subtitle { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 1px; }
+.header-actions { display: flex; align-items: center; gap: var(--space-2); }
+
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-muted); border: 1px solid var(--color-border);
+  transition: all var(--transition-interactive);
+}
+.theme-toggle:hover { color: var(--color-text); background: var(--color-surface-offset); }
+
+.main { padding: var(--space-6); max-width: var(--content-wide); margin: 0 auto; width: 100%; }
+
+/* ─── TABS ─── */
+.tabs { display: flex; gap: var(--space-1); margin-bottom: var(--space-6);
+  background: var(--color-surface); border-radius: var(--radius-lg);
+  padding: var(--space-1); border: 1px solid var(--color-border); width: fit-content; }
+.tab {
+  padding: var(--space-2) var(--space-4); border-radius: calc(var(--radius-lg) - var(--space-1));
+  font-size: var(--text-xs); font-weight: 500; color: var(--color-text-muted);
+  transition: all var(--transition-interactive); cursor: pointer;
+}
+.tab.active { background: var(--color-primary); color: var(--color-text-inverse); font-weight: 600; }
+.tab:hover:not(.active) { background: var(--color-surface-offset); color: var(--color-text); }
+.tab-panel { display: none; }
+.tab-panel.active { display: contents; }
+
+/* ─── KPI CARDS ─── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: var(--space-4); margin-bottom: var(--space-6);
+}
+.kpi-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); padding: var(--space-5);
+  box-shadow: var(--shadow-sm); transition: box-shadow var(--transition-interactive);
+  position: relative; overflow: hidden;
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); }
+.kpi-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--color-primary-highlight) 0%, transparent 60%);
+  opacity: 0.4; pointer-events: none;
+}
+.kpi-card.success::before { background: linear-gradient(135deg, var(--color-success-highlight) 0%, transparent 60%); }
+.kpi-card.warning::before { background: linear-gradient(135deg, var(--color-warning-highlight) 0%, transparent 60%); }
+.kpi-card.orange::before { background: linear-gradient(135deg, rgba(218, 113, 1, 0.15) 0%, transparent 60%); }
+.kpi-card.gold::before { background: linear-gradient(135deg, rgba(209, 153, 0, 0.15) 0%, transparent 60%); }
+.kpi-label { font-size: var(--text-xs); color: var(--color-text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-2); }
+.kpi-value { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums lining-nums; line-height: 1; margin-bottom: var(--space-1); }
+.kpi-value.primary { color: var(--color-primary); }
+.kpi-value.success { color: var(--color-success); }
+.kpi-value.warning { color: var(--color-warning); }
+.kpi-value.orange { color: var(--color-orange); }
+.kpi-value.gold { color: var(--color-gold); }
+.kpi-sub { font-size: var(--text-xs); color: var(--color-text-muted); }
+.kpi-icon { position: absolute; top: var(--space-4); right: var(--space-4); opacity: 0.2; color: var(--color-primary); }
+.kpi-icon.success { color: var(--color-success); }
+.kpi-icon.warning { color: var(--color-warning); }
+.kpi-icon.orange { color: var(--color-orange); }
+.kpi-icon.gold { color: var(--color-gold); }
+
+/* ─── CHART GRID ─── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4); margin-bottom: var(--space-6);
+}
+.chart-grid.single { grid-template-columns: 1fr; }
+.chart-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.chart-card.wide { grid-column: span 2; }
+.chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-4); }
+.chart-title { font-size: var(--text-sm); font-weight: 600; color: var(--color-text); }
+.chart-subtitle { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 2px; }
+.chart-badge { font-size: var(--text-xs); padding: 2px 8px; border-radius: var(--radius-full);
+  background: var(--color-primary-highlight); color: var(--color-primary); font-weight: 500; }
+.chart-container { position: relative; height: 220px; }
+.chart-container.tall { height: 280px; }
+
+/* ─── DATA TABLE ─── */
+.table-wrap {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-6);
+}
+.table-header-bar {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-divider);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+}
+.table-title { font-size: var(--text-sm); font-weight: 600; }
+.search-input {
+  background: var(--color-surface-offset); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs); color: var(--color-text); width: 200px;
+  transition: all var(--transition-interactive); outline: none;
+  font-family: var(--font-body);
+}
+.search-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-highlight); }
+.data-table { width: 100%; overflow-x: auto; }
+.data-table table { min-width: 900px; }
+.data-table th {
+  padding: var(--space-3) var(--space-4); text-align: left;
+  font-size: var(--text-xs); font-weight: 600; color: var(--color-text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-surface); white-space: nowrap;
+  cursor: pointer; user-select: none; position: sticky; top: 0;
+  transition: color var(--transition-interactive);
+}
+.data-table th:hover { color: var(--color-text); }
+.data-table th .sort-icon { display: inline-block; margin-left: 4px; opacity: 0.4; }
+.data-table th.sorted .sort-icon { opacity: 1; color: var(--color-primary); }
+.data-table td {
+  padding: var(--space-3) var(--space-4); font-size: var(--text-xs);
+  border-bottom: 1px solid var(--color-divider);
+  font-variant-numeric: tabular-nums lining-nums; font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--color-surface-offset); }
+.profit-positive { color: var(--color-success); font-weight: 600; }
+.profit-low { color: var(--color-warning); }
+.date-cell { font-family: var(--font-body); font-weight: 500; color: var(--color-text); }
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: var(--radius-full);
+  font-size: 10px; font-weight: 600; font-family: var(--font-body);
+}
+.pill-green { background: var(--color-success-highlight); color: var(--color-success); }
+.pill-orange { background: var(--color-warning-highlight); color: var(--color-warning); }
+.pill-blue { background: var(--color-primary-highlight); color: var(--color-primary); }
+
+/* ─── ADD ENTRY FORM ─── */
+.form-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-6);
+}
+.form-header {
+  padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-divider);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.form-header-title { font-size: var(--text-sm); font-weight: 600; }
+.form-body { padding: var(--space-5); }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-4); }
+.form-group { display: flex; flex-direction: column; gap: var(--space-1); }
+.form-label { font-size: var(--text-xs); font-weight: 500; color: var(--color-text-muted); }
+.form-input {
+  background: var(--color-surface-offset); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm); color: var(--color-text); font-family: var(--font-body);
+  transition: all var(--transition-interactive); outline: none;
+}
+.form-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-highlight); }
+.form-actions { margin-top: var(--space-5); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-5); border-radius: var(--radius-md);
+  font-size: var(--text-sm); font-weight: 600; cursor: pointer; border: none;
+  transition: all var(--transition-interactive); font-family: var(--font-body);
+}
+.btn-primary { background: var(--color-primary); color: var(--color-text-inverse); }
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-ghost { background: transparent; color: var(--color-text-muted); border: 1px solid var(--color-border); }
+.btn-ghost:hover { background: var(--color-surface-offset); color: var(--color-text); }
+.form-hint { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+/* ─── SUCCESS TOAST ─── */
+.toast {
+  position: fixed; bottom: var(--space-6); right: var(--space-6); z-index: 999;
+  background: var(--color-success); color: #fff;
+  padding: var(--space-3) var(--space-5); border-radius: var(--radius-lg);
+  font-size: var(--text-sm); font-weight: 500; box-shadow: var(--shadow-lg);
+  transform: translateY(100px); opacity: 0;
+  transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ─── INSIGHTS ─── */
+.insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+.insight-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); padding: var(--space-5);
+  box-shadow: var(--shadow-sm); display: flex; gap: var(--space-4); align-items: flex-start;
+}
+.insight-icon-wrap {
+  width: 40px; height: 40px; border-radius: var(--radius-lg); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.insight-icon-wrap.primary { background: var(--color-primary-highlight); color: var(--color-primary); }
+.insight-icon-wrap.success { background: var(--color-success-highlight); color: var(--color-success); }
+.insight-icon-wrap.warning { background: var(--color-warning-highlight); color: var(--color-warning); }
+.insight-icon-wrap.orange { background: rgba(218, 113, 1, 0.15); color: var(--color-orange); }
+.insight-title { font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); }
+.insight-body { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.6; }
+
+/* ─── FOOTER ─── */
+.footer { text-align: center; padding: var(--space-6); font-size: var(--text-xs); color: var(--color-text-faint); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .main { padding: var(--space-4); }
+  .chart-grid { grid-template-columns: 1fr; }
+  .chart-card.wide { grid-column: span 1; }
+  .header { padding: var(--space-3) var(--space-4); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .tabs { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ─── HEADER ─── -->
+<header class="header">
+  <div class="header-left">
+    <svg class="logo-svg" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-label="Pick-Me Dashboard">
+      <rect width="32" height="32" rx="8" fill="currentColor" opacity="0.12"/>
+      <circle cx="16" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+      <path d="M10 26c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M22 8l2 2-2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="header-title">Pick-Me Dashboard</div>
+      <div class="header-subtitle">Delivery earnings tracker</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span id="live-date" style="font-size:var(--text-xs);color:var(--color-text-muted);margin-right:var(--space-2);"></span>
+    <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ─── MAIN ─── -->
+<main class="main">
+  <!-- TABS -->
+  <div class="tabs" role="tablist">
+    <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab" onclick="switchTab('trends', this)">Trends</button>
+    <button class="tab" onclick="switchTab('logbook', this)">Logbook</button>
+    <button class="tab" onclick="switchTab('add', this)">+ Add Entry</button>
+    <button class="tab" onclick="switchTab('insights', this)">Insights</button>
+  </div>
+
+  <!-- ===== OVERVIEW TAB ===== -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <div><div class="chart-title">Daily Earnings & Profit</div><div class="chart-subtitle">Total earnings vs net profit per session</div></div>
+          <span class="chart-badge">All sessions</span>
+        </div>
+        <div class="chart-container tall"><canvas id="earningsChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Cost Breakdown</div><div class="chart-subtitle">Where does revenue go?</div></div></div>
+        <div class="chart-container"><canvas id="costBreakdownChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Profit per Km</div><div class="chart-subtitle">Efficiency across sessions</div></div></div>
+        <div class="chart-container"><canvas id="profitPerKmChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TRENDS TAB ===== -->
+  <div class="tab-panel" id="tab-trends">
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-header"><div><div class="chart-title">Cumulative Profit Over Time</div><div class="chart-subtitle">Total profit accumulated</div></div></div>
+        <div class="chart-container tall"><canvas id="cumulativeChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Km Driven per Session</div><div class="chart-subtitle">Distance covered daily</div></div></div>
+        <div class="chart-container"><canvas id="kmChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Fuel Efficiency (Rs/Km)</div><div class="chart-subtitle">Fuel cost efficiency per km</div></div></div>
+        <div class="chart-container"><canvas id="fuelEffChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOGBOOK TAB ===== -->
+  <div class="tab-panel" id="tab-logbook">
+    <div class="table-wrap">
+      <div class="table-header-bar">
+        <div class="table-title">Session Logbook</div>
+        <input class="search-input" id="search-input" placeholder="Search by date…" oninput="filterTable(this.value)" />
+      </div>
+      <div class="data-table">
+        <table id="log-table">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)"># <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(1)">Date <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(2)">Start Km <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(3)">End Km <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(4)">Distance <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(5)">Earnings (Rs) <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(6)">Fuel (Rs) <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(7)">Bike (Rs) <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(8)">Profit (Rs) <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(9)">Rs/Km <span class="sort-icon">↕</span></th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody id="log-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADD ENTRY TAB ===== -->
+  <div class="tab-panel" id="tab-add">
+    <div class="form-card">
+      <div class="form-header">
+        <div class="form-header-title">Add New Session</div>
+      </div>
+      <div class="form-body">
+        <form id="entry-form" onsubmit="addEntry(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="f-date">Date</label>
+              <input class="form-input" id="f-date" type="date" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-start">Start Meter (km)</label>
+              <input class="form-input" id="f-start" type="number" placeholder="e.g. 67000" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-end">End Meter (km)</label>
+              <input class="form-input" id="f-end" type="number" placeholder="e.g. 67120" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-pickme">Pick-Me Earnings (Rs)</label>
+              <input class="form-input" id="f-pickme" type="number" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-uber">Uber Earnings (Rs)</label>
+              <input class="form-input" id="f-uber" type="number" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-fuel-cost">Fuel Cost (Rs/litre)</label>
+              <input class="form-input" id="f-fuel-cost" type="number" placeholder="e.g. 380" value="380" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-bike-deposit">Bike Deposit (Rs)</label>
+              <input class="form-input" id="f-bike-deposit" type="number" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-notes">Notes (optional)</label>
+              <input class="form-input" id="f-notes" type="text" placeholder="e.g. heavy rain day" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Session</button>
+            <button type="button" class="btn btn-ghost" onclick="resetForm()">Clear</button>
+            <span class="form-hint" id="form-calc-preview"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== INSIGHTS TAB ===== -->
+  <div class="tab-panel" id="tab-insights">
+    <div class="insights-grid" id="insights-grid"></div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Session Profit Distribution</div><div class="chart-subtitle">Frequency by profit range</div></div></div>
+        <div class="chart-container"><canvas id="profitDistChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">Earnings vs Km (Scatter)</div><div class="chart-subtitle">More km = more earnings?</div></div></div>
+        <div class="chart-container"><canvas id="scatterChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+<footer class="footer">Pick-Me Delivery Tracker &mdash; Kanishka Maduranga &bull; Data is stored in memory only (no server)</footer>
+</div>
+
+<div class="toast" id="toast">✓ Session saved!</div>
+
+<script>
+// ─── DATA ───
+let sessions = [
+  {id:1, date:"2026-03-18", start:64215, end:64277, km:62, pickme:0, uber:2502, fuel:280.24, bike:248, profit:1973.76, profitPerKm:31.83},
+  {id:2, date:"2026-03-23", start:64277, end:64395, km:118, pickme:0, uber:3541, fuel:670.24, bike:472, profit:2398.76, profitPerKm:20.33},
+  {id:3, date:"2026-03-24", start:64395, end:64445, km:50, pickme:0, uber:2888, fuel:284, bike:200, profit:2404, profitPerKm:48.08},
+  {id:4, date:"2026-03-28", start:64445, end:64521, km:76, pickme:0, uber:1909, fuel:431.68, bike:304, profit:1173.32, profitPerKm:15.44},
+  {id:5, date:"2026-03-29", start:64521, end:64611, km:90, pickme:0, uber:3370, fuel:716.4, bike:360, profit:2293.60, profitPerKm:25.48},
+  {id:6, date:"2026-03-31", start:64611, end:64721, km:110, pickme:0, uber:4404, fuel:875.6, bike:440, profit:3088.40, profitPerKm:28.08},
+  {id:7, date:"2026-04-01", start:64721, end:64884, km:163, pickme:0, uber:9230, fuel:1297.48, bike:652, profit:7280.52, profitPerKm:44.67},
+  {id:8, date:"2026-04-02", start:64884, end:65051, km:167, pickme:0, uber:8310, fuel:1329.32, bike:668, profit:6312.68, profitPerKm:37.80},
+  {id:9, date:"2026-04-20", start:66086, end:66131, km:45, pickme:0, uber:2030, fuel:358.2, bike:180, profit:1491.80, profitPerKm:33.15},
+  {id:10, date:"2026-04-30", start:66190, end:66247, km:57, pickme:0, uber:2840, fuel:453.72, bike:228, profit:2158.28, profitPerKm:37.86},
+  {id:11, date:"2026-05-01", start:66247, end:66322, km:75, pickme:0, uber:3090, fuel:597, bike:300, profit:2193, profitPerKm:29.24},
+  {id:12, date:"2026-05-02", start:66322, end:66351, km:29, pickme:0, uber:648, fuel:230.84, bike:116, profit:301.16, profitPerKm:10.38},
+  {id:13, date:"2026-05-03", start:66351, end:66423, km:72, pickme:0, uber:2247, fuel:590.4, bike:288, profit:1368.60, profitPerKm:19.01},
+  {id:14, date:"2026-05-05", start:66423, end:66508, km:85, pickme:0, uber:2903, fuel:697, bike:340, profit:1866, profitPerKm:21.95},
+  {id:15, date:"2026-05-06", start:66508, end:66604, km:96, pickme:0, uber:4630, fuel:787.2, bike:384, profit:3458.80, profitPerKm:36.03},
+  {id:16, date:"2026-05-07", start:66604, end:66712, km:108, pickme:0, uber:5125, fuel:885.6, bike:432, profit:3807.40, profitPerKm:35.25},
+  {id:17, date:"2026-05-10", start:66712, end:66830, km:118, pickme:0, uber:4737, fuel:967.6, bike:472, profit:3297.40, profitPerKm:27.94},
+  {id:18, date:"2026-05-14", start:66830, end:66968, km:138, pickme:0, uber:5080, fuel:1131.6, bike:552, profit:3396.40, profitPerKm:24.61},
+];
+
+let nextId = 19;
+let sortCol = 0, sortDir = 1;
+
+// ─── HELPERS ───
+function fmt(n){ return 'Rs ' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtN(n){ return n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function shortDate(d){ const dt = new Date(d); return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
+
+// ─── KPI ───
+function renderKPIs(){
+  const totalProfit = sessions.reduce((s,r)=>s+r.profit,0);
+  const totalEarnings = sessions.reduce((s,r)=>s+(r.uber+r.pickme),0);
+  const totalKm = sessions.reduce((s,r)=>s+r.km,0);
+  const totalFuel = sessions.reduce((s,r)=>s+r.fuel,0);
+  const avgProfPerKm = totalProfit/totalKm;
+  const bestDay = sessions.reduce((a,b)=>b.profit>a.profit?b:a);
+  const avgProfit = totalProfit/sessions.length;
+  const margin = (totalProfit/totalEarnings)*100;
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card success">
+      <div class="kpi-icon success"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="kpi-label">Total Profit</div>
+      <div class="kpi-value success">${fmt(totalProfit)}</div>
+      <div class="kpi-sub">${sessions.length} sessions recorded</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon primary"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+      <div class="kpi-label">Total Earnings</div>
+      <div class="kpi-value primary">${fmt(totalEarnings)}</div>
+      <div class="kpi-sub">Gross before costs</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-icon orange"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="kpi-label">Total Fuel Cost</div>
+      <div class="kpi-value orange">${fmt(totalFuel)}</div>
+      <div class="kpi-sub">${((totalFuel/totalEarnings)*100).toFixed(1)}% of revenue</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-icon gold"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+      <div class="kpi-label">Total Km</div>
+      <div class="kpi-value gold">${totalKm.toLocaleString()} km</div>
+      <div class="kpi-sub">${fmtN(avgProfPerKm)} Rs profit/km avg</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Profit Margin</div>
+      <div class="kpi-value primary">${margin.toFixed(1)}%</div>
+      <div class="kpi-sub">Of gross revenue</div>
+    </div>
+    <div class="kpi-card success">
+      <div class="kpi-label">Best Day</div>
+      <div class="kpi-value success" style="font-size:var(--text-lg)">${fmt(bestDay.profit)}</div>
+      <div class="kpi-sub">${shortDate(bestDay.date)} · ${bestDay.km} km</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Profit/Session</div>
+      <div class="kpi-value primary" style="font-size:var(--text-lg)">${fmt(avgProfit)}</div>
+      <div class="kpi-sub">Per delivery day</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="kpi-label">Avg Daily Km</div>
+      <div class="kpi-value warning" style="font-size:var(--text-lg)">${(totalKm/sessions.length).toFixed(1)} km</div>
+      <div class="kpi-sub">Per session avg</div>
+    </div>
+  `;
+}
+
+// ─── CHARTS ───
+let charts = {};
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function getChartColors(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    grid: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    text: isDark ? '#8a8985' : '#7a7974',
+    primary: isDark ? '#4fc9cf' : '#01696f',
+    success: isDark ? '#6daa45' : '#437a22',
+    warning: isDark ? '#f59a4a' : '#964219',
+    orange: isDark ? '#fdab43' : '#da7101',
+    blue: isDark ? '#5591c7' : '#006494',
+    purple: isDark ? '#a86fdf' : '#7a39bb',
+    gold: isDark ? '#e8af34' : '#d19900',
+    error: isDark ? '#e06baf' : '#a12c7b',
+  };
+}
+
+function buildCharts(){
+  const s = [...sessions].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const labels = s.map(r => shortDate(r.date));
+  const c = getChartColors();
+  const chartDefaults = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:c.text, font:{family:"'Geist', sans-serif", size:11}, boxWidth:12, padding:16 }}},
+    scales:{
+      x:{ grid:{color:c.grid}, ticks:{color:c.text, font:{family:"'Geist', sans-serif", size:10}, maxRotation:45}},
+      y:{ grid:{color:c.grid}, ticks:{color:c.text, font:{family:"'Geist', sans-serif", size:10}}}
+    }
+  };
+
+  // Earnings chart
+  destroyChart('earningsChart');
+  charts['earningsChart'] = new Chart(document.getElementById('earningsChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Gross Earnings', data:s.map(r=>r.uber+r.pickme), backgroundColor:c.primary+'55', borderColor:c.primary, borderWidth:1.5, borderRadius:4},
+        {label:'Net Profit', data:s.map(r=>r.profit), backgroundColor:c.success+'55', borderColor:c.success, borderWidth:1.5, borderRadius:4},
+      ]
+    },
+    options:{...chartDefaults, plugins:{...chartDefaults.plugins, tooltip:{callbacks:{label:ctx=>' Rs '+ctx.raw.toLocaleString('en-IN',{minimumFractionDigits:2})}}}},
+  });
+
+  // Cost breakdown donut
+  const totFuel = s.reduce((a,r)=>a+r.fuel,0);
+  const totBike = s.reduce((a,r)=>a+r.bike,0);
+  const totProfit = s.reduce((a,r)=>a+r.profit,0);
+  destroyChart('costBreakdownChart');
+  charts['costBreakdownChart'] = new Chart(document.getElementById('costBreakdownChart'), {
+    type:'doughnut',
+    data:{
+      labels:['Net Profit','Fuel Cost','Bike Cost'],
+      datasets:[{data:[totProfit,totFuel,totBike], backgroundColor:[c.success+'cc',c.orange+'cc',c.gold+'cc'], borderColor:['transparent'], borderWidth:2, hoverOffset:8}]
+    },
+    options:{responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{legend:{labels:{color:c.text, font:{family:"'Geist'",size:11}, boxWidth:12}},
+      tooltip:{callbacks:{label:ctx=>` Rs ${ctx.raw.toLocaleString('en-IN',{minimumFractionDigits:2})} (${((ctx.raw/(totFuel+totBike+totProfit))*100).toFixed(1)}%)`}}}
+    },
+  });
+
+  // Profit per km line
+  destroyChart('profitPerKmChart');
+  charts['profitPerKmChart'] = new Chart(document.getElementById('profitPerKmChart'), {
+    type:'line',
+    data:{labels, datasets:[{label:'Rs/km', data:s.map(r=>r.profitPerKm), borderColor:c.purple, backgroundColor:c.purple+'20', borderWidth:2, pointRadius:4, pointBackgroundColor:c.purple, fill:true, tension:0.3}]},
+    options:{...chartDefaults, plugins:{...chartDefaults.plugins, tooltip:{callbacks:{label:ctx=>` Rs ${ctx.raw.toFixed(2)}/km`}}}},
+  });
+
+  // Cumulative profit
+  let cum = 0;
+  const cumData = s.map(r=>{ cum+=r.profit; return cum; });
+  destroyChart('cumulativeChart');
+  charts['cumulativeChart'] = new Chart(document.getElementById('cumulativeChart'), {
+    type:'line',
+    data:{labels, datasets:[{label:'Cumulative Profit', data:cumData, borderColor:c.success, backgroundColor:c.success+'20', borderWidth:2.5, fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:c.success}]},
+    options:{...chartDefaults, plugins:{...chartDefaults.plugins, tooltip:{callbacks:{label:ctx=>` Rs ${ctx.raw.toLocaleString('en-IN',{minimumFractionDigits:2})}`}}}},
+  });
+
+  // KM chart
+  destroyChart('kmChart');
+  charts['kmChart'] = new Chart(document.getElementById('kmChart'), {
+    type:'bar',
+    data:{labels, datasets:[{label:'Km Driven', data:s.map(r=>r.km), backgroundColor:c.blue+'88', borderColor:c.blue, borderWidth:1.5, borderRadius:4}]},
+    options:{...chartDefaults},
+  });
+
+  // Fuel efficiency
+  destroyChart('fuelEffChart');
+  charts['fuelEffChart'] = new Chart(document.getElementById('fuelEffChart'), {
+    type:'line',
+    data:{labels, datasets:[{label:'Fuel Rs/km', data:s.map(r=>(r.fuel/r.km).toFixed(2)), borderColor:c.warning, backgroundColor:c.warning+'20', borderWidth:2, pointRadius:4, fill:true, tension:0.3, pointBackgroundColor:c.warning}]},
+    options:{...chartDefaults, plugins:{...chartDefaults.plugins, tooltip:{callbacks:{label:ctx=>` Rs ${ctx.raw}/km`}}}},
+  });
+
+  // Profit distribution histogram
+  const buckets = [[0,1000,'<1K'],[1000,2000,'1-2K'],[2000,3000,'2-3K'],[3000,5000,'3-5K'],[5000,8000,'5-8K']];
+  const bCounts = buckets.map(b=>s.filter(r=>r.profit>=b[0]&&r.profit<b[1]).length);
+  destroyChart('profitDistChart');
+  charts['profitDistChart'] = new Chart(document.getElementById('profitDistChart'), {
+    type:'bar',
+    data:{labels:buckets.map(b=>b[2]), datasets:[{label:'Sessions', data:bCounts, backgroundColor:c.primary+'88', borderColor:c.primary, borderWidth:1.5, borderRadius:4}]},
+    options:{...chartDefaults, scales:{x:{...chartDefaults.scales.x}, y:{...chartDefaults.scales.y, ticks:{...chartDefaults.scales.y.ticks, precision:0}}}},
+  });
+
+  // Scatter km vs earnings
+  destroyChart('scatterChart');
+  charts['scatterChart'] = new Chart(document.getElementById('scatterChart'), {
+    type:'scatter',
+    data:{datasets:[{label:'Session', data:s.map(r=>({x:r.km, y:r.uber+r.pickme})), backgroundColor:c.orange+'cc', pointRadius:6}]},
+    options:{...chartDefaults,
+      scales:{x:{...chartDefaults.scales.x, title:{display:true, text:'Km', color:c.text, font:{size:10}}},
+              y:{...chartDefaults.scales.y, title:{display:true, text:'Earnings (Rs)', color:c.text, font:{size:10}}}},
+      plugins:{...chartDefaults.plugins, tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.x} km → Rs ${ctx.parsed.y.toLocaleString('en-IN')}`}}}
+    },
+  });
+}
+
+// ─── TABLE ───
+function renderTable(data){
+  const tbody = document.getElementById('log-tbody');
+  if(!data.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:var(--space-8);color:var(--color-text-muted)">No sessions found</td></tr>'; return; }
+  tbody.innerHTML = data.map((r,i)=>{
+    const total = r.uber+r.pickme;
+    const profClass = r.profit < 1000 ? 'profit-low' : 'profit-positive';
+    const src = r.pickme>0 && r.uber>0 ? '<span class="pill pill-blue">Both</span>' : r.pickme>0 ? '<span class="pill pill-green">PickMe</span>' : '<span class="pill pill-orange">Uber</span>';
+    return `<tr>
+      <td>${r.id}</td>
+      <td class="date-cell">${new Date(r.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})}</td>
+      <td>${r.start.toLocaleString()}</td>
+      <td>${r.end.toLocaleString()}</td>
+      <td>${r.km} km</td>
+      <td>${fmtN(total)}</td>
+      <td>${fmtN(r.fuel)}</td>
+      <td>${fmtN(r.bike)}</td>
+      <td class="${profClass}">${fmtN(r.profit)}</td>
+      <td>${r.profitPerKm.toFixed(2)}</td>
+      <td>${src}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(q){
+  const filtered = q ? sessions.filter(r=>r.date.includes(q)||new Date(r.date).toLocaleDateString('en-GB').includes(q)) : sessions;
+  renderTable(filtered);
+}
+
+function sortTable(col){
+  if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  const keys=['id','date','start','end','km','total','fuel','bike','profit','profitPerKm'];
+  sessions.sort((a,b)=>{
+    let va = col===5 ? a.uber+a.pickme : a[keys[col]];
+    let vb = col===5 ? b.uber+b.pickme : b[keys[col]];
+    if(typeof va==='string') return va.localeCompare(vb)*sortDir;
+    return (va-vb)*sortDir;
+  });
+  renderTable(sessions);
+}
+
+// ─── INSIGHTS ───
+function renderInsights(){
+  const s = sessions;
+  const avgKm = s.reduce((a,r)=>a+r.km,0)/s.length;
+  const avgProfit = s.reduce((a,r)=>a+r.profit,0)/s.length;
+  const bestPKm = s.reduce((a,b)=>b.profitPerKm>a.profitPerKm?b:a);
+  const worstPKm = s.reduce((a,b)=>b.profitPerKm<a.profitPerKm?b:a);
+  const totalFuelRatio = (s.reduce((a,r)=>a+r.fuel,0)/s.reduce((a,r)=>a+r.uber+r.pickme,0)*100).toFixed(1);
+  const streak = (()=>{ let maxS=0,cur=1; for(let i=1;i<s.length;i++){ const d1=new Date(s[i-1].date), d2=new Date(s[i].date), diff=(d2-d1)/(1000*60*60*24); if(diff<=2) cur++; else cur=1; maxS=Math.max(maxS,cur); } return maxS; })();
+  document.getElementById('insights-grid').innerHTML = `
+    <div class="insight-card">
+      <div class="insight-icon-wrap primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      <div>
+        <div class="insight-title">Most Efficient Day</div>
+        <div class="insight-body">${shortDate(bestPKm.date)} earned <strong>Rs ${bestPKm.profitPerKm.toFixed(2)}/km</strong> with ${bestPKm.km} km driven. Short, high-value trips dominate.</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon-wrap warning"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div>
+        <div class="insight-title">Lowest Efficiency Day</div>
+        <div class="insight-body">${shortDate(worstPKm.date)} only made <strong>Rs ${worstPKm.profitPerKm.toFixed(2)}/km</strong>. Consider avoiding long low-fare zones.</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon-wrap orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 0 0 4 4h9a5 5 0 1 0-.1-9.999 5.002 5.002 0 0 0-9.78 2.096A4.001 4.001 0 0 0 3 15z"/></svg></div>
+      <div>
+        <div class="insight-title">Fuel is ${totalFuelRatio}% of Revenue</div>
+        <div class="insight-body">Average fuel cost is Rs ${(s.reduce((a,r)=>a+r.fuel,0)/s.length).toFixed(0)} per session. Riding in tight zones can reduce this significantly.</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon-wrap success"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+      <div>
+        <div class="insight-title">Sweet Spot: 90–120 km/day</div>
+        <div class="insight-body">Sessions between 90–120 km average Rs ${(s.filter(r=>r.km>=90&&r.km<=120).reduce((a,r)=>a+r.profit,0)/(s.filter(r=>r.km>=90&&r.km<=120).length||1)).toFixed(0)} profit. This range balances earnings and fuel.</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon-wrap primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div>
+        <div class="insight-title">Active Streak</div>
+        <div class="insight-body">Longest active streak is <strong>${streak} consecutive days</strong> (≤2 day gaps). Consistency compounds income over time.</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon-wrap success"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div>
+        <div class="insight-title">Projected Monthly Profit</div>
+        <div class="insight-body">At current average of <strong>Rs ${avgProfit.toFixed(0)}/session</strong> and ${avgKm.toFixed(0)} km/session, working 20 days/month projects Rs ${(avgProfit*20).toFixed(0)}.</div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── ADD ENTRY ───
+document.addEventListener('input', function(e){
+  if(['f-start','f-end','f-pickme','f-uber','f-fuel-cost'].includes(e.target.id)) previewCalc();
+});
+function previewCalc(){
+  const start = +document.getElementById('f-start').value||0;
+  const end = +document.getElementById('f-end').value||0;
+  const pm = +document.getElementById('f-pickme').value||0;
+  const ub = +document.getElementById('f-uber').value||0;
+  const fuelRate = +document.getElementById('f-fuel-cost').value||380;
+  if(end>start){
+    const km=end-start, fuel=km*fuelRate*0.0234, bike=km*4, profit=(pm+ub)-fuel-bike;
+    document.getElementById('form-calc-preview').textContent = `Est: ${km} km · Fuel Rs ${fuel.toFixed(0)} · Profit Rs ${profit.toFixed(0)}`;
+  } else { document.getElementById('form-calc-preview').textContent=''; }
+}
+function addEntry(e){
+  e.preventDefault();
+  const date=document.getElementById('f-date').value;
+  const start=+document.getElementById('f-start').value;
+  const end=+document.getElementById('f-end').value;
+  const pm=+document.getElementById('f-pickme').value||0;
+  const ub=+document.getElementById('f-uber').value||0;
+  const fuelRate=+document.getElementById('f-fuel-cost').value||380;
+  const km=end-start;
+  const fuel=parseFloat((km*fuelRate*0.0234).toFixed(2));
+  const bike=km*4;
+  const total=pm+ub;
+  const profit=parseFloat((total-fuel-bike).toFixed(2));
+  const profitPerKm=km>0?parseFloat((profit/km).toFixed(2)):0;
+  sessions.push({id:nextId++, date, start, end, km, pickme:pm, uber:ub, fuel, bike, profit, profitPerKm});
+  sessions.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  renderAll();
+  showToast('✓ Session saved!');
+  document.getElementById('entry-form').reset();
+  document.getElementById('form-calc-preview').textContent='';
+}
+function resetForm(){ document.getElementById('entry-form').reset(); document.getElementById('form-calc-preview').textContent=''; }
+
+// ─── TOAST ───
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ─── TABS ───
+const panels = {overview:'tab-overview',trends:'tab-trends',logbook:'tab-logbook',add:'tab-add',insights:'tab-insights'};
+function switchTab(key, btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panels[key]).classList.add('active');
+  if(key==='trends'||key==='overview'||key==='insights') setTimeout(buildCharts,50);
+  if(key==='logbook') renderTable(sessions);
+  if(key==='insights') renderInsights();
+}
+
+// ─── THEME TOGGLE ───
+(function(){
+  const btn=document.querySelector('[data-theme-toggle]'), root=document.documentElement;
+  let d=root.getAttribute('data-theme')||'dark';
+  root.setAttribute('data-theme',d);
+  function updateIcon(){ btn.innerHTML = d==='dark'
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'; }
+  updateIcon();
+  btn.addEventListener('click',()=>{ d=d==='dark'?'light':'dark'; root.setAttribute('data-theme',d); updateIcon(); buildCharts(); });
+})();
+
+// ─── DATE ───
+document.getElementById('live-date').textContent = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+// ─── RENDER ALL ───
+function renderAll(){ renderKPIs(); buildCharts(); renderTable(sessions); renderInsights(); }
+window.addEventListener('DOMContentLoaded', renderAll);
+</script>
+</body>
+</html>
